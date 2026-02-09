@@ -4,6 +4,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
+import okhttp3.Protocol
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.ByteArrayOutputStream
@@ -13,7 +14,16 @@ object HttpUtils {
 
     private val cookie: String = ""
 
-    private var client: OkHttpClient = OkHttpClient().newBuilder().connectTimeout(Duration.ofMillis(20000)).build()
+    private var client: OkHttpClient = OkHttpClient().newBuilder()
+        .connectTimeout(Duration.ofMillis(20000))
+        .addInterceptor { chain ->
+            val request = chain.request().newBuilder()
+                .header("User-Agent", ua.random())
+                .header("Referer", "https://wiki.biligame.com/")
+                .build()
+            chain.proceed(request)
+        }
+        .build()
 
     private val ua = listOf(
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
@@ -39,9 +49,9 @@ object HttpUtils {
     suspend fun get(url: String): String = withContext(Dispatchers.IO) {
         val request = Request.Builder()
             .url(url)
-            // .header("cookie", cookie)
-            // .header("Content-Type", "application/json; charset=utf-8")
-            // .header("user-agent", ua.random())
+            .header("cookie", cookie)
+            .header("Content-Type", "application/json; charset=utf-8")
+            .header("user-agent", ua.random())
             // 修改 get/post 方法中的 header 部分
             .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8")
             .header("Accept-Language", "zh-CN,zh;q=0.9,en;q=0.8")
